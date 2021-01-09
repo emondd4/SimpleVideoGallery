@@ -35,7 +35,6 @@ public class MainActivity extends AppCompatActivity {
 
     public static final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 123;
 
-    @RequiresApi(api = Build.VERSION_CODES.Q)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,7 +43,6 @@ public class MainActivity extends AppCompatActivity {
         init();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.Q)
     private void init() {
         recyclerView = findViewById(R.id.recyclerView);
         layoutManager = new GridLayoutManager(getApplicationContext(),2);
@@ -58,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.Q)
     private void fetchVideosFromGallery() {
         Uri uri;
         Cursor cursor;

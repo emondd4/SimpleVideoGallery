@@ -28,9 +28,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_video_player);
-
         init();
-
     }
 
     private void init() {
@@ -49,7 +47,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
             @Override
             public void run() {
                 player.setThrowsWhenUsingWrongThread(false);
-                MediaItem mediaItem = MediaItem.fromUri(Uri.fromFile(new File(link)));
+                MediaItem mediaItem = MediaItem.fromUri(Uri.parse(link));
                 player.setMediaItem(mediaItem);
                 player.prepare();
                 player.play();

@@ -1,6 +1,6 @@
 package com.bdtask.simplevideogallery;
 
-import androidx.annotation.RequiresApi;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -14,6 +14,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -21,17 +22,27 @@ import android.provider.MediaStore;
 import android.widget.Toast;
 
 import com.bdtask.simplevideogallery.Adapter.VideoAdapter;
-import com.bdtask.simplevideogallery.Model.VideoModel;
 
-import java.lang.reflect.Array;
+import com.bdtask.simplevideogallery.Model.VideoData;
+import com.bdtask.simplevideogallery.Utils.ContentUtill;
+import com.nostra13.universalimageloader.cache.memory.impl.WeakMemoryCache;
+import com.nostra13.universalimageloader.core.DisplayImageOptions;
+import com.nostra13.universalimageloader.core.ImageLoader;
+import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
+import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
+
+
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private RecyclerView.LayoutManager layoutManager;
-    private ArrayList<VideoModel> videoModels;
     private VideoAdapter videoAdapter;
+
+
+    ImageLoader imageLoader;
+    ArrayList<VideoData> videoData = new ArrayList<>();
 
     public static final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 123;
 
@@ -47,7 +58,8 @@ public class MainActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerView);
         layoutManager = new GridLayoutManager(getApplicationContext(),2);
         recyclerView.setLayoutManager(layoutManager);
-        videoModels = new ArrayList<>();
+
+        ImageLoaderFun();
 
         if (checkPermissionREAD_EXTERNAL_STORAGE(this)) {
             fetchVideosFromGallery();
@@ -56,46 +68,34 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    private void ImageLoaderFun() {
+        ImageLoaderConfiguration build = new ImageLoaderConfiguration.Builder(getApplicationContext()).memoryCache(new WeakMemoryCache()).defaultDisplayImageOptions(new DisplayImageOptions.Builder().cacheInMemory().cacheOnDisc().bitmapConfig(Bitmap.Config.RGB_565).displayer(new FadeInBitmapDisplayer(400)).build()).build();
+        this.imageLoader = ImageLoader.getInstance();
+        this.imageLoader.init(build);
+    }
+
     private void fetchVideosFromGallery() {
-        Uri uri;
-        Cursor cursor;
-        int column_index_data,thum;
-
-        String absolutePathImage = null;
-        uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
-
-        String[] projection = {
-                MediaStore.MediaColumns.DATA,
-                MediaStore.Video.Media.BUCKET_DISPLAY_NAME,
-                MediaStore.Video.Media._ID,
-                MediaStore.Video.Thumbnails.DATA
-        };
-
-        String orderBy = MediaStore.Images.Media.DATE_TAKEN;
-
-        cursor = getApplicationContext().getContentResolver().query(uri,projection,null,null,orderBy +" DESC");
-
-        column_index_data = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA);
-        thum = cursor.getColumnIndexOrThrow(MediaStore.Video.Thumbnails.DATA);
-
-        while (cursor.moveToNext()){
-            absolutePathImage = cursor.getString(column_index_data);
-
-            VideoModel videoModel = new VideoModel();
-            videoModel.setSelected(false);
-            videoModel.setPath(absolutePathImage);
-            videoModel.setThumb(cursor.getString(thum));
-
-            videoModels.add(videoModel);
+        Cursor managedQuery = MainActivity.this.managedQuery(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, new String[]{"_data", "_id", "_display_name", "duration"}, null, null, " _id DESC");
+        int count = managedQuery.getCount();
+        managedQuery.moveToFirst();
+        for (int i = 0; i < count; i++) {
+            Uri withAppendedPath = Uri.withAppendedPath(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, ContentUtill.getLong(managedQuery));
+            this.videoData.add(new VideoData(
+                    managedQuery.getString(managedQuery.getColumnIndexOrThrow("_display_name")),
+                    withAppendedPath,
+                    managedQuery.getString(managedQuery.getColumnIndex("_data")),
+                    ContentUtill.getTime(managedQuery, "duration")));
+            managedQuery.moveToNext();
         }
 
-        for (int i = 0; i<videoModels.size();i++){
-            System.out.println(videoModels.get(i).getPath());
+        for (int i = 0; i<videoData.size();i++){
+            System.out.println(videoData.get(i).videoName);
         }
 
-        videoAdapter = new VideoAdapter(getApplicationContext(),videoModels,MainActivity.this);
+        videoAdapter = new VideoAdapter(getApplicationContext(),videoData,MainActivity.this,imageLoader);
         recyclerView.setAdapter(videoAdapter);
     }
+
     public boolean checkPermissionREAD_EXTERNAL_STORAGE(
             final Context context) {
         int currentAPIVersion = Build.VERSION.SDK_INT;

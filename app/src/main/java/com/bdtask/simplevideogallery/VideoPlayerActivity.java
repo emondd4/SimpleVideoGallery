@@ -55,9 +55,11 @@ public class VideoPlayerActivity extends AppCompatActivity {
                 player.play();
             }
         });
+    }
 
-
-
-
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        player.release();
     }
 }
